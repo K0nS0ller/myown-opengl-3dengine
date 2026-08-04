@@ -6,8 +6,6 @@
 #include "include/glad.h"
 #include <GLFW/glfw3.h>
 
-#include "include/fast_obj/fast_obj.h"
-
 //contents
 
 // shaders
