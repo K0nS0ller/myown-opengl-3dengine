@@ -16,10 +16,6 @@
 //imgs
 #include "content/textures/container.h"
 
-//models
-#include "content/assets/Untitled.h"
-extern unsigned char assets_Untitled_obj[];
-extern unsigned int assets_Untitled_obj_len;
 
 extern unsigned char textures_container_raw[];
 extern unsigned int textures_container_raw_len;
