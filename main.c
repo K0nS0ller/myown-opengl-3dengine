@@ -24,8 +24,14 @@ extern unsigned int textures_container_raw_len;
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
 
+int g_width, g_height;
+int need_update_projection = 0;
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    g_width = width;
+    g_height = height;
     glViewport(0, 0, width, height);
+    need_update_projection = 1;
 }
 
 extern unsigned char shaders_fragment_shader_glsl[];
@@ -197,7 +203,6 @@ int main() {
 
     while (!glfwWindowShouldClose(window)) {
 
-
         double currentTime = glfwGetTime();
         fps++;
         if (currentTime - previousTime >= 1.0)
@@ -247,6 +252,12 @@ int main() {
         if(rot_angle == 4) glm_rotate(model, angle, (vec3){0.0f, 0.0f, -1.0f});
         //glm_translate(model, (vec3){0.5f, -0.5f, 0.0f});
 
+        if (need_update_projection) {
+            float aspect = (float)g_width / (float)g_height;
+            glm_perspective(glm_rad(45.0f), aspect, 0.1f, 100.0f, projection);
+            need_update_projection = 0;
+        }
+
         glUseProgram(shaderProgram);
 
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, model[0]);
@@ -258,7 +269,6 @@ int main() {
         glBindVertexArray(VAO);
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
-
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
