@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd content; find . -type f -name '*.h' -print -delete
+cd content;
 
 set -e
 
@@ -85,4 +85,4 @@ do
     rm "$raw"
 done
 
-cd ..; gcc main.c include/glad.c -o engine -lGL -lglfw -lm -flto -Os -funroll-loops -fexpensive-optimizations -pipe -s
+cd ..; gcc engine/main.c include/glad.c -o bin -lGL -lglfw -lm -flto -Os -funroll-loops -fexpensive-optimizations -pipe -s
