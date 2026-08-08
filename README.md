@@ -8,7 +8,7 @@ This engine is written in pure C/OpenGL with minimal use of third-party librarie
 - **One binary** – all resources inside, no external files
 - **Minimalist** – just what you need for 3D rendering
 - **Fullscreen mode** - automatically adjusts to the monitor
-- **Camera Control** – WASD + Mouse (in development)
+- **Camera Control** – WASD + Mouse
 - **Loading models** – OBJ support via native converter [obj2h](https://github.com/K0nS0ller/obj2h)
 
 ## Build
