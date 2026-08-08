@@ -30,7 +30,11 @@ chmod +x build.sh
 ```
 then just run the binary
 
+
+
 ## Controls
   --- WASD -  camera movement ---
+  
   --- Mouse - camera look ---
+  
   --- ESC - exit ---
