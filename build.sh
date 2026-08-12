@@ -85,4 +85,8 @@ do
     rm "$raw"
 done
 
-cd ..; gcc engine/main.c include/glad.c -o bin -lGL -lglfw -lm -flto -Os -funroll-loops -fexpensive-optimizations -pipe -s
+cd ..
+
+engine_compile_files=$(ls engine/*.c)
+
+gcc $engine_compile_files include/glad.c -o bin -lGL -lglfw -lm -flto -pipe -s -Os -funroll-loops -fexpensive-optimizations
