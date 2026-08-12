@@ -7,167 +7,63 @@
 #include "../include/glad.h"
 #include <GLFW/glfw3.h>
 
-
-//contents
-
-// shaders
-#include "../content/shaders/vertex_shader.h"
-#include "../content/shaders/fragment_shader.h"
+#include "../game/resources.h"
 
 
-//imgs
-#include "../content/textures/container.h"
+#include "models.h"
 
-//models
-#include "../content/assets/model.h"
-
-extern const float model_vertices[];
-extern const unsigned int model_indices[];
-
-extern unsigned char textures_container_raw[];
-extern unsigned int textures_container_raw_len;
+#include "platform.h"
+#include "textures.h"
 
 
-unsigned int SCR_WIDTH = 800;
-unsigned int SCR_HEIGHT = 800;
+int SCR_WIDTH = 800, SCR_HEIGHT = 600;
 
-int g_width, g_height;
-int need_update_projection = 0;
+int g_width=800, g_height=600;
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    g_width = width;
-    g_height = height;
-    glViewport(0, 0, width, height);
-    need_update_projection = 1;
-}
+const char* fragsource = (const char*)shaders_fragment_shader_glsl;
+const char* vertsource = (const char*)shaders_vertex_shader_glsl;
 
-extern unsigned char shaders_fragment_shader_glsl[];
-extern unsigned int shaders_fragment_shader_glsl_len;
-
-const char *fragsource = (const char *)shaders_fragment_shader_glsl;
-const char *vertsource = (const char *)shaders_vertex_shader_glsl;
-
+extern unsigned char shaders_vat_shader_glsl[];
+extern unsigned int shaders_vat_shader_glsl_len;
+const char* vatsource = (const char*)shaders_vat_shader_glsl;
 
 int main() {
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    GLFWwindow* window = engine_create_window("engine", SCR_WIDTH, SCR_HEIGHT);
 
-    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    toggle_fullscreen(window, &SCR_WIDTH, &SCR_HEIGHT, 1);
 
-    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    GLuint vertexShader = compile_shader(GL_VERTEX_SHADER, vertsource, "vertexShader");
 
-    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+    GLuint fragmentShader = compile_shader(GL_FRAGMENT_SHADER, fragsource, "fragmentShader");
 
-    GLFWwindow* window = glfwCreateWindow(mode->width, mode->height, "engine", monitor, NULL);
+    GLuint shaderProgram = create_shader_program(vertexShader, fragmentShader);
 
-    if (!window) {
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-
-    glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        printf("failed to load GLAD\n");
-        glfwDestroyWindow(window);
-        glfwTerminate();
-        return -1;
-    }
-
-    glfwGetFramebufferSize(window, &SCR_WIDTH, &SCR_HEIGHT);
-
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertsource, NULL);
-    glCompileShader(vertexShader);
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        printf("Vertex shader error:\n%s\n", infoLog);
-    }
-
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragsource, NULL);
-    glCompileShader(fragmentShader);
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        printf("fragment shader error:\n%s\n", infoLog);
-    }
-
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        printf("program link error:\n%s\n", infoLog);
-        return 0;
-    }
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
-
 
     mat4 model = GLM_MAT4_IDENTITY_INIT;
     mat4 view = GLM_MAT4_IDENTITY_INIT;
     mat4 projection = GLM_MAT4_IDENTITY_INIT;
 
-    glm_perspective(glm_rad(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f, projection);
+    glm_perspective(glm_rad(90.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f, projection);
 
     vec3 front = {0.0f,0.0f,0.0f};
 
-    vec3 cameraPos = {0.0f, 0.0f, 3.0f};
+    vec3 cameraPos = {0.0f, 1000.0f, 3.0f};
     vec3 cameraTarget = {0.0f, 0.0f, 0.0f};
     vec3 cameraUp = {0.0f, 1.0f, 0.0f};
     glm_lookat(cameraPos, cameraTarget, cameraUp, view);
 
+    GLuint tex_terrain = load_texture(textures_grass_raw, textures_grass_raw_len, 1960, 1960, 4);
 
-    GLuint VAO, VBO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
+    GLuint tex_coin = load_texture(textures_coin_raw, textures_coin_raw_len, 3508, 2480, 4);
 
-    glBindVertexArray(VAO);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, MODEL_VERTEX_COUNT * 8 * sizeof(float), model_vertices, GL_STATIC_DRAW);
+    mesh terrain = create_mesh(model_Terrain_vertices, MODEL_Terrain_VERTEX_COUNT, model_Terrain_indices, MODEL_Terrain_INDEX_COUNT);
+    terrain.texture = tex_terrain;
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, MODEL_INDEX_COUNT * sizeof(unsigned int), model_indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-
-    glBindVertexArray(0);
-
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512 , 0, GL_RGBA, GL_UNSIGNED_BYTE, textures_container_raw);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    mesh coin = create_mesh(model_coin_vertices, MODEL_coin_VERTEX_COUNT, model_coin_indices, MODEL_coin_INDEX_COUNT);
+    coin.texture = tex_coin;
 
     double previousTime = glfwGetTime();
     int fps = 0;
@@ -176,7 +72,7 @@ int main() {
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
 
-    // glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -195,12 +91,17 @@ int main() {
     float sensivity = 0.1f;
     vec3 right;
 
+    vec3 forward;
+
     float yaw = -90.0f;
     float pitch = 0.0f;
 
+    float falling_speed = 0.0f;
+    bool first_jump;
+
     while (!glfwWindowShouldClose(window)) {
 
-        float speed = 2.5f;
+        float speed = 15.0f;
 
         double currentTime = glfwGetTime();
         fps++;
@@ -229,12 +130,17 @@ int main() {
         if (pitch > 89.0f) pitch = 89.0f;
         if (pitch < -89.0f) pitch = -89.0f;
 
-        float yaw_rad = yaw * 3.14159f / 180.0f;
-        float pitch_rad = pitch * 3.14159f / 180.0f;
+        float yaw_rad = yaw * M_PI / 180.0f;
+        float pitch_rad = pitch * M_PI / 180.0f;
 
         front[0] = cos(yaw_rad) * cos(pitch_rad);
         front[1] = sin(pitch_rad);
         front[2] = sin(yaw_rad) * cos(pitch_rad);
+
+        vec3 horizontal_front;
+        glm_vec3_copy(front, horizontal_front);
+        horizontal_front[1] = 0.0f;
+        glm_vec3_normalize(horizontal_front);
 
         glm_vec3_cross(front, cameraUp, right);
         glm_vec3_normalize(right);
@@ -249,53 +155,70 @@ int main() {
         }
 
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            speed *= 2;
+            speed *= 4;
         }
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            cameraPos[0] += front[0] * speed * deltaTime;
-            cameraPos[1] += front[1] * speed * deltaTime;
-            cameraPos[2] += front[2] * speed * deltaTime;
+            cameraPos[0] += horizontal_front[0] * speed * deltaTime;
+            cameraPos[1] += horizontal_front[1] * speed * deltaTime;
+            cameraPos[2] += horizontal_front[2] * speed * deltaTime;
         }
 
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
             cameraPos[0] += right[0] * speed * deltaTime * -1.0f;
-            cameraPos[1] += right[1] * speed * deltaTime * -1.0f;
+            // cameraPos[1] += right[1] * speed * deltaTime * -1.0f;
             cameraPos[2] += right[2] * speed * deltaTime * -1.0f;
         }
 
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            cameraPos[0] += front[0] * speed * deltaTime * -1.0f;
-            cameraPos[1] += front[1] * speed * deltaTime * -1.0f;
-            cameraPos[2] += front[2] * speed * deltaTime * -1.0f;
+            cameraPos[0] += horizontal_front[0] * speed * deltaTime * -1.0f;
+            // cameraPos[1] += front[1] * speed * deltaTime * -1.0f;
+            cameraPos[2] += horizontal_front[2] * speed * deltaTime * -1.0f;
         }
 
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             cameraPos[0] += right[0] * speed * deltaTime;
-            cameraPos[1] += right[1] * speed * deltaTime;
+            // cameraPos[1] += right[1] * speed * deltaTime;
             cameraPos[2] += right[2] * speed * deltaTime;
         }
 
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            cameraPos[1] += speed * deltaTime;
+            if(cameraPos[1] <= 3 && first_jump == true) falling_speed -= 1;
         }
         if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-            cameraPos[1] -= speed * deltaTime;
+            falling_speed += 1;
         }
 
+        if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+            toggle_fullscreen(window, &g_width, &g_height, 0);
+            glm_perspective(glm_rad(90.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f, projection);
+
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
+            toggle_fullscreen(window, &g_width, &g_height, 1);
+
+        }
+
+        if(cameraPos[1] > 3) first_jump = false;
+        if(cameraPos[1] > 2) first_jump = true;
 
         float currentFrame = (float)glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+
+        if(cameraPos[1] > 2.0) falling_speed += 9.8*deltaTime;
+        else if(falling_speed > 0) falling_speed = 0;
+
+        cameraPos[1] -= falling_speed * 10 * deltaTime;
+
         glClearColor(0.11f, 0.145f, 0.29f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        if (need_update_projection) {
-            float aspect = (float)g_width / (float)g_height;
-            glm_perspective(glm_rad(45.0f), aspect, 0.1f, 100.0f, projection);
-            need_update_projection = 0;
-        }
+        glfwGetFramebufferSize(window, &SCR_WIDTH, &SCR_HEIGHT);
+        float aspect = (float)SCR_WIDTH / (float)SCR_HEIGHT;
+        glm_perspective(glm_rad(90.0f), aspect, 0.1f, 1000.0f, projection);
 
         glUseProgram(shaderProgram);
 
@@ -303,20 +226,15 @@ int main() {
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, view[0]);
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, projection[0]);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glBindVertexArray(VAO);
+        renderMesh(terrain);
 
-        glDrawElements(GL_TRIANGLES, MODEL_INDEX_COUNT, GL_UNSIGNED_INT, 0);
+        renderMesh(coin);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
-    glDeleteTextures(1, &texture);
 
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    engine_destroy_window(window);
+
     return 0;
 }
