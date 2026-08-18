@@ -9,7 +9,7 @@ This engine is written in pure C/OpenGL with minimal use of third-party librarie
 - **Minimalist** – just what you need for 3D rendering
 - **Fullscreen mode** - automatically adjusts to the monitor
 - **Camera Control** – WASD + Mouse
-- **Loading models** – OBJ support via native converter [obj2h](https://github.com/K0nS0ller/obj2h)
+- **Loading models** – OBJ support via native converter [obj2h](https://github.com/K0nS0ller/obj2h-converter)
 
 ## Build
 First, you need to install the glfw library. You can do this by downloading it from the [website](https://www.glfw.org) or from your distribution's repository:
